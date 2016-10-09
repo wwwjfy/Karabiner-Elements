@@ -17,12 +17,14 @@
 @property(weak) IBOutlet NSButton* keyboardFnStateButton;
 @property(weak) IBOutlet NSStepper* initialKeyRepeatStepper;
 @property(weak) IBOutlet NSStepper* keyRepeatStepper;
+@property(weak) IBOutlet NSStepper* standaloneKeyStepper;
 @property(weak) IBOutlet NSTableView* devicesTableView;
 @property(weak) IBOutlet NSTableView* devicesExternalKeyboardTableView;
 @property(weak) IBOutlet NSTableView* fnFunctionKeysTableView;
 @property(weak) IBOutlet NSTableView* simpleModificationsTableView;
 @property(weak) IBOutlet NSTextField* initialKeyRepeatTextField;
 @property(weak) IBOutlet NSTextField* keyRepeatTextField;
+@property(weak) IBOutlet NSTextField* standaloneKeyTextField;
 @property(weak) IBOutlet NSTextField* versionLabel;
 @property(weak) IBOutlet SimpleModificationsMenuManager* simpleModificationsMenuManager;
 @property(weak) IBOutlet SimpleModificationsTableViewController* simpleModificationsTableViewController;
@@ -88,6 +90,10 @@
   uint32_t keyRepeatMilliseconds = self.systemPreferencesManager.systemPreferencesModel.keyRepeatMilliseconds;
   self.keyRepeatTextField.stringValue = [NSString stringWithFormat:@"%d", keyRepeatMilliseconds];
   self.keyRepeatStepper.integerValue = keyRepeatMilliseconds;
+
+  uint32_t standaloneKeyMilliseconds = self.systemPreferencesManager.systemPreferencesModel.standaloneKeyMilliseconds;
+  self.standaloneKeyTextField.stringValue = [NSString stringWithFormat:@"%d", standaloneKeyMilliseconds];
+  self.standaloneKeyStepper.integerValue = standaloneKeyMilliseconds;
 }
 
 - (IBAction)updateSystemPreferencesValues:(id)sender {
@@ -107,6 +113,12 @@
   }
   if (sender == self.keyRepeatStepper) {
     model.keyRepeatMilliseconds = self.keyRepeatStepper.intValue;
+  }
+  if (sender == self.standaloneKeyTextField) {
+    model.standaloneKeyMilliseconds = [self.standaloneKeyTextField.stringValue intValue];
+  }
+  if (sender == self.standaloneKeyStepper) {
+    model.standaloneKeyMilliseconds = self.standaloneKeyStepper.intValue;
   }
 
   [self updateSystemPreferencesUIValues];

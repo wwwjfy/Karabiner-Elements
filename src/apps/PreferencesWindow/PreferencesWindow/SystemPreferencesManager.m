@@ -47,6 +47,7 @@ static void system_preferences_updated_callback(const struct libkrbn_system_pref
   mutableDictionary[@"com.apple.keyboard.fnState"] = @(model.keyboardFnState);
   mutableDictionary[@"InitialKeyRepeat"] = @(libkrbn_system_preferences_convert_key_repeat_milliseconds_to_system_preferences_value(model.initialKeyRepeatMilliseconds));
   mutableDictionary[@"KeyRepeat"] = @(libkrbn_system_preferences_convert_key_repeat_milliseconds_to_system_preferences_value(model.keyRepeatMilliseconds));
+  mutableDictionary[@"StandaloneKey"] = @(libkrbn_system_preferences_convert_key_repeat_milliseconds_to_system_preferences_value(model.standaloneKeyMilliseconds));
 
   [userDefaults setPersistentDomain:mutableDictionary forName:NSGlobalDomain];
 }

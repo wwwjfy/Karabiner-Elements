@@ -8,6 +8,7 @@
 @property BOOL keyboardFnState;
 @property uint32_t initialKeyRepeatMilliseconds;
 @property uint32_t keyRepeatMilliseconds;
+@property uint32_t standaloneKeyMilliseconds;
 
 - (instancetype _Nonnull)initWithValues:(const struct libkrbn_system_preferences_values* _Nonnull)values;
 

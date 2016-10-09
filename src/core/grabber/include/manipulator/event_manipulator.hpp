@@ -105,6 +105,14 @@ public:
     fn_function_keys_.add(from_key_code, to_key_code);
   }
 
+  void clear_standalone_keys(void) {
+    standalone_keys_.clear();
+  }
+
+  void add_standalone_key(krbn::key_code from_key_code, krbn::key_code to_key_code) {
+    standalone_keys_.add(from_key_code, to_key_code);
+  }
+
   void create_event_dispatcher_client(void) {
     event_dispatcher_manager_.create_event_dispatcher_client();
   }
@@ -227,6 +235,11 @@ public:
         virtual_hid_keyboard_pressed_keys_.set_report_keys(report);
         virtual_hid_device_client_.post_keyboard_input_report(report);
       }
+      return;
+    }
+
+    if (process_standalone_key_key(to_key_code, keyboard_type, pressed)) {
+      key_repeat_manager_.stop();
       return;
     }
 
@@ -503,6 +516,52 @@ private:
     virtual_hid_device_client.initialize_virtual_hid_keyboard();
   }
 
+  bool process_standalone_key_key(krbn::key_code key_code, krbn::keyboard_type keyboard_type, bool pressed) {
+    if (pressed) {
+      if (!standalone_keys_.get(key_code) || (standalone_keys_timer_ != nullptr && key_code != standalone_key_)) {
+        if (standalone_keys_timer_ != nullptr) {
+          if (!post_modifier_flag_event(standalone_key_, keyboard_type, pressed)) {
+            post_key(standalone_key_, standalone_key_, keyboard_type, true, false);
+          }
+          standalone_keys_timer_ = nullptr;
+        }
+        return false;
+      } else {
+        standalone_key_ = key_code;
+        long standalone_key_milliseconds = system_preferences_values_.get_standalone_key_milliseconds();
+        standalone_keys_timer_ = std::make_unique<gcd_utility::main_queue_timer>(
+            DISPATCH_TIMER_STRICT,
+            dispatch_time(DISPATCH_TIME_NOW, standalone_key_milliseconds * NSEC_PER_MSEC),
+            standalone_key_milliseconds * NSEC_PER_MSEC,
+            0,
+            ^{
+              if (!post_modifier_flag_event(standalone_key_, keyboard_type, pressed)) {
+                post_key(standalone_key_, standalone_key_, keyboard_type, true, false);
+              }
+              standalone_keys_timer_ = nullptr;
+            });
+        return true;
+      }
+    } else {
+      if (key_code == standalone_key_ && standalone_keys_timer_ != nullptr) {
+        standalone_keys_timer_ = nullptr;
+        post_standalone_key_key(standalone_key_, keyboard_type);
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  bool post_standalone_key_key(krbn::key_code key_code, krbn::keyboard_type keyboard_type) {
+    if (auto to_key_code = standalone_keys_.get(key_code)) {
+      post_key(*to_key_code, *to_key_code, keyboard_type, true, false);
+      post_key(*to_key_code, *to_key_code, keyboard_type, false, false);
+      return true;
+    }
+    return false;
+  }
+
   bool post_modifier_flag_event(krbn::key_code key_code, krbn::keyboard_type keyboard_type, bool pressed) {
     auto operation = pressed ? manipulator::modifier_flag_manager::operation::increase : manipulator::modifier_flag_manager::operation::decrease;
 
@@ -548,6 +607,9 @@ private:
 
   simple_modifications simple_modifications_;
   simple_modifications fn_function_keys_;
+  simple_modifications standalone_keys_;
+  krbn::key_code standalone_key_;
+  std::unique_ptr<gcd_utility::main_queue_timer> standalone_keys_timer_;
 
   manipulated_keys manipulated_keys_;
   manipulated_keys manipulated_fn_keys_;
