@@ -92,6 +92,22 @@ public:
     fn_function_keys_.add(from_key_code, to_key_code);
   }
 
+  void clear_standalone_keys(void) {
+    standalone_keys_.clear();
+  }
+
+  void add_standalone_key(krbn::key_code from_key_code, krbn::key_code to_key_code) {
+    standalone_keys_.add(from_key_code, to_key_code);
+  }
+
+  void clear_one_to_many_mappings(void) {
+    one_to_many_mappings_.clear();
+  }
+
+  void add_one_to_many_mappings(krbn::key_code from_key_code, krbn::key_code to_key_code) {
+    one_to_many_mappings_.add(from_key_code, to_key_code);
+  }
+
   void initialize_virtual_hid_keyboard(const krbn::virtual_hid_keyboard_configuration_struct& configuration) {
     virtual_hid_device_client_.initialize_virtual_hid_keyboard(configuration);
   }
@@ -113,6 +129,19 @@ public:
                              uint64_t timestamp,
                              krbn::key_code from_key_code,
                              bool pressed) {
+    if (process_standalone_key(device_registry_entry_id, timestamp, from_key_code, pressed)) {
+      return;
+    }
+    _handle_keyboard_event(device_registry_entry_id, timestamp, from_key_code, pressed);
+  }
+
+  void _handle_keyboard_event(device_registry_entry_id device_registry_entry_id,
+                              uint64_t timestamp,
+                              krbn::key_code from_key_code,
+                              bool pressed) {
+    if (process_one_to_many_mappings(from_key_code, pressed, timestamp)) {
+        return;
+    }
     krbn::key_code to_key_code = from_key_code;
 
     // ----------------------------------------
@@ -193,9 +222,6 @@ public:
     }
 
     // ----------------------------------------
-    if (post_modifier_flag_event(to_key_code, pressed, timestamp)) {
-      return;
-    }
 
     post_key(to_key_code, pressed, timestamp);
   }
@@ -351,23 +377,123 @@ private:
     std::mutex mutex_;
   };
 
-  bool post_modifier_flag_event(krbn::key_code key_code, bool pressed, uint64_t timestamp) {
-    auto operation = pressed ? manipulator::modifier_flag_manager::operation::increase : manipulator::modifier_flag_manager::operation::decrease;
+  class one_to_many_mappings final {
+  public:
+    one_to_many_mappings(const one_to_many_mappings&) = delete;
 
-    auto modifier_flag = krbn::types::get_modifier_flag(key_code);
-    if (modifier_flag != krbn::modifier_flag::zero) {
-      modifier_flag_manager_.manipulate(modifier_flag, operation);
-
-      post_key(key_code, pressed, timestamp);
-      return true;
+    one_to_many_mappings(void) {
     }
 
+    void clear(void) {
+      std::lock_guard<std::mutex> guard(mutex_);
+
+      map_.clear();
+    }
+
+    void add(krbn::key_code from_key_code, krbn::key_code to_key_code) {
+      std::lock_guard<std::mutex> guard(mutex_);
+
+      auto it = map_.find(from_key_code);
+      if (it != map_.end()) {
+          it->second.push_back(to_key_code);
+      } else {
+          std::vector<krbn::key_code> to_key_codes;
+          to_key_codes.push_back(to_key_code);
+          map_[from_key_code] = to_key_codes;
+      }
+    }
+
+    boost::optional<std::vector<krbn::key_code>> get(krbn::key_code from_key_code) {
+      std::lock_guard<std::mutex> guard(mutex_);
+
+      auto it = map_.find(from_key_code);
+      if (it != map_.end()) {
+        return it->second;
+      }
+
+      return boost::none;
+    }
+
+  private:
+    std::unordered_map<krbn::key_code, std::vector<krbn::key_code>> map_;
+    std::mutex mutex_;
+  };
+
+  bool process_one_to_many_mappings(krbn::key_code key_code, bool pressed, uint64_t timestamp) {
+    if (auto to_key_codes = one_to_many_mappings_.get(key_code)) {
+      for (auto it = (*to_key_codes).begin(); it != (*to_key_codes).end(); it++) {
+        if ((krbn::types::get_modifier_flag(*it) != krbn::modifier_flag::zero) == pressed) {
+          post_key(*it, pressed, timestamp);
+        }
+      }
+      for (auto it = (*to_key_codes).begin(); it != (*to_key_codes).end(); it++) {
+        if ((krbn::types::get_modifier_flag(*it) != krbn::modifier_flag::zero) != pressed) {
+          post_key(*it, pressed, timestamp);
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool process_standalone_key(device_registry_entry_id device_registry_entry_id,
+                              uint64_t timestamp,
+                              krbn::key_code from_key_code,
+                              bool pressed) {
+    if (pressed) {
+      if (!standalone_keys_.get(from_key_code) || (standalone_keys_timer_ != nullptr && from_key_code != standalone_from_key_)) {
+        if (standalone_keys_timer_ != nullptr) {
+          standalone_keys_timer_ = nullptr;
+          _handle_keyboard_event(device_registry_entry_id, timestamp, standalone_from_key_, pressed);
+        }
+        return false;
+      } else {
+        standalone_from_key_ = from_key_code;
+        long standalone_key_milliseconds = system_preferences_values_.get_standalone_key_milliseconds();
+        standalone_keys_timer_ = std::make_unique<gcd_utility::main_queue_timer>(
+            DISPATCH_TIMER_STRICT,
+            dispatch_time(DISPATCH_TIME_NOW, standalone_key_milliseconds * NSEC_PER_MSEC),
+            standalone_key_milliseconds * NSEC_PER_MSEC,
+            0,
+            ^{
+              _handle_keyboard_event(device_registry_entry_id, timestamp, from_key_code, pressed);
+              standalone_keys_timer_ = nullptr;
+            });
+        return true;
+      }
+    } else {
+      if (from_key_code == standalone_from_key_ && standalone_keys_timer_ != nullptr) {
+        standalone_keys_timer_ = nullptr;
+        auto to_standalone_key_code = standalone_keys_.get(from_key_code);
+        post_key(*to_standalone_key_code, true, timestamp);
+        post_key(*to_standalone_key_code, false, timestamp);
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  bool post_standalone_key(krbn::key_code key_code, uint64_t timestamp) {
+    if (auto to_key_code = standalone_keys_.get(key_code)) {
+      post_key(*to_key_code, true, timestamp);
+      post_key(*to_key_code, false, timestamp);
+      return true;
+    }
     return false;
   }
 
   void post_key(krbn::key_code key_code, bool pressed, uint64_t timestamp) {
     add_delay_to_continuous_event(timestamp);
 
+    // pre-process modifier keys
+    auto operation = pressed ? manipulator::modifier_flag_manager::operation::increase : manipulator::modifier_flag_manager::operation::decrease;
+    auto modifier_flag = krbn::types::get_modifier_flag(key_code);
+    if (modifier_flag != krbn::modifier_flag::zero) {
+      modifier_flag_manager_.manipulate(modifier_flag, operation);
+    }
+
+    // send key event
     if (auto usage_page = krbn::types::get_usage_page(key_code)) {
       if (auto usage = krbn::types::get_usage(key_code)) {
         pqrs::karabiner_virtual_hid_device::hid_event_service::keyboard_event keyboard_event;
@@ -416,6 +542,10 @@ private:
 
   simple_modifications simple_modifications_;
   simple_modifications fn_function_keys_;
+  simple_modifications standalone_keys_;
+  one_to_many_mappings one_to_many_mappings_;
+  krbn::key_code standalone_from_key_;
+  std::unique_ptr<gcd_utility::main_queue_timer> standalone_keys_timer_;
 
   manipulated_keys manipulated_keys_;
   manipulated_keys manipulated_fn_keys_;

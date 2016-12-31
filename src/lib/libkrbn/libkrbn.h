@@ -48,6 +48,7 @@ void libkrbn_configuration_monitor_terminate(libkrbn_configuration_monitor* _Nul
 
 struct libkrbn_system_preferences_values {
   bool keyboard_fn_state;
+  uint32_t standalone_key_milliseconds;
 };
 
 typedef void libkrbn_system_preferences_monitor;

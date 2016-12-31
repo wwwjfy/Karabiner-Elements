@@ -10,18 +10,23 @@ class system_preferences final {
 public:
   class values {
   public:
-    values(void) : keyboard_fn_state_(system_preferences::get_keyboard_fn_state()) {
+<<<<<<< HEAD
+    values(void) : keyboard_fn_state_(system_preferences::get_keyboard_fn_state()),
+                   standalone_key_milliseconds_(system_preferences::get_standalone_key_milliseconds()) {
     }
 
     bool get_keyboard_fn_state(void) const { return keyboard_fn_state_; }
+    uint32_t get_standalone_key_milliseconds(void) const { return standalone_key_milliseconds_; }
 
     bool operator==(const system_preferences::values& other) const {
-      return keyboard_fn_state_ == other.keyboard_fn_state_;
+      return keyboard_fn_state_ == other.keyboard_fn_state_ &&
+             standalone_key_milliseconds_ == other.standalone_key_milliseconds_;
     }
     bool operator!=(const system_preferences::values& other) const { return !(*this == other); }
 
   private:
     bool keyboard_fn_state_;
+    uint32_t standalone_key_milliseconds_;
   };
 
   static boost::optional<bool> get_bool_property(CFStringRef _Nonnull key, CFStringRef _Nonnull application_id) {
@@ -56,5 +61,18 @@ public:
     }
     // default value
     return false;
+  }
+
+  static uint32_t get_standalone_key_milliseconds(void) {
+    if (auto value = system_preferences::get_float_property(CFSTR("StandaloneKey"), CFSTR("Apple Global Domain"))) {
+      return convert_key_repeat_system_preferences_value_to_milliseconds(*value);
+    }
+    // default value
+    return 200;
+  }
+
+  static uint32_t convert_key_repeat_system_preferences_value_to_milliseconds(float value) {
+    // The unit is 1/60 second.
+    return static_cast<uint32_t>(round(value * 1000 / 60));
   }
 };

@@ -72,6 +72,32 @@ public:
     client_->send_to(reinterpret_cast<uint8_t*>(&s), sizeof(s));
   }
 
+  void clear_standalone_keys(void) {
+    krbn::operation_type_clear_standalone_keys_struct s;
+    client_->send_to(reinterpret_cast<uint8_t*>(&s), sizeof(s));
+  }
+
+  void add_standalone_key(krbn::key_code from_key_code, krbn::key_code to_key_code) {
+    krbn::operation_type_add_standalone_key_struct s;
+    s.from_key_code = from_key_code;
+    s.to_key_code = to_key_code;
+    client_->send_to(reinterpret_cast<uint8_t*>(&s), sizeof(s));
+  }
+
+  void clear_one_to_many_mappings(void) {
+    krbn::operation_type_clear_one_to_many_mappings_struct s;
+    client_->send_to(reinterpret_cast<uint8_t*>(&s), sizeof(s));
+  }
+
+  void add_one_to_many_mappings(krbn::key_code from_key_code, std::vector<krbn::key_code> to_key_codes) {
+    krbn::operation_type_add_one_to_many_mappings_struct s;
+    s.from_key_code = from_key_code;
+    for (auto it = to_key_codes.begin(); it != to_key_codes.end(); ++it) {
+        s.to_key_code = *it;
+        client_->send_to(reinterpret_cast<uint8_t*>(&s), sizeof(s));
+    }
+  }
+
   void virtual_hid_keyboard_configuration_updated(const krbn::virtual_hid_keyboard_configuration_struct& virtual_hid_keyboard_configuration_struct) {
     krbn::operation_type_virtual_hid_keyboard_configuration_updated_struct s;
     s.virtual_hid_keyboard_configuration_struct = virtual_hid_keyboard_configuration_struct;
