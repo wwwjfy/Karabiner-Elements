@@ -36,6 +36,7 @@ struct libkrbn_system_preferences_values {
   bool keyboard_fn_state;
   uint32_t initial_key_repeat_milliseconds;
   uint32_t key_repeat_milliseconds;
+  uint32_t standalone_key_milliseconds;
 };
 
 typedef void libkrbn_system_preferences_monitor;

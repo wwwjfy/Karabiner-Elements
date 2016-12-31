@@ -46,6 +46,7 @@ public:
     device_grabber_.stop_grabbing();
     event_manipulator_.clear_simple_modifications();
     event_manipulator_.clear_fn_function_keys();
+    event_manipulator_.clear_standalone_keys();
   }
 
 private:
@@ -137,6 +138,32 @@ private:
           } else {
             auto p = reinterpret_cast<krbn::operation_type_add_device_struct*>(&(buffer_[0]));
             device_grabber_.add_device_configuration(p->device_identifiers_struct, p->device_configuration_struct);
+          }
+          break;
+
+        case krbn::operation_type::clear_standalone_keys:
+          event_manipulator_.clear_standalone_keys();
+          break;
+
+        case krbn::operation_type::add_standalone_key:
+          if (n < sizeof(krbn::operation_type_add_standalone_key_struct)) {
+            logger::get_logger().error("invalid size for krbn::operation_type::add_standalone_key ({0})", n);
+          } else {
+            auto p = reinterpret_cast<krbn::operation_type_add_standalone_key_struct*>(&(buffer_[0]));
+            event_manipulator_.add_standalone_key(p->from_key_code, p->to_key_code);
+          }
+          break;
+
+        case krbn::operation_type::clear_one_to_many_mappings:
+          event_manipulator_.clear_one_to_many_mappings();
+          break;
+
+        case krbn::operation_type::add_one_to_many_mappings:
+          if (n < sizeof(krbn::operation_type_add_one_to_many_mappings_struct)) {
+            logger::get_logger().error("invalid size for krbn::operation_type::add_one_to_many_mappings ({0})", n);
+          } else {
+            auto p = reinterpret_cast<krbn::operation_type_add_one_to_many_mappings_struct*>(&(buffer_[0]));
+            event_manipulator_.add_one_to_many_mappings(p->from_key_code, p->to_key_code);
           }
           break;
 
