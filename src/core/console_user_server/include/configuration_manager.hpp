@@ -59,6 +59,16 @@ private:
       grabber_client_.add_fn_function_key(pair.first, pair.second);
     }
 
+    grabber_client_.clear_standalone_keys();
+    for (const auto& pair : core_configuration_->get_current_profile_standalone_keys()) {
+      grabber_client_.add_standalone_key(pair.first, pair.second);
+    }
+
+    grabber_client_.clear_one_to_many_mappings();
+    for (const auto& pair : core_configuration_->get_current_profile_one_to_many_mappings()) {
+      grabber_client_.add_one_to_many_mappings(pair.first, pair.second);
+    }
+
     grabber_client_.virtual_hid_keyboard_configuration_updated(core_configuration_->get_current_profile_virtual_hid_keyboard());
 
     grabber_client_.clear_devices();

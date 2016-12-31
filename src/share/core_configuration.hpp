@@ -118,10 +118,22 @@ public:
     return get_key_code_pair_from_json_object(profile["simple_modifications"]);
   }
 
+  // std::vector<from,to>
+  std::vector<std::pair<krbn::key_code, std::vector<krbn::key_code>>> get_current_profile_one_to_many_mappings(void) {
+    auto profile = get_current_profile();
+    return get_one_to_many_keycode_pair_from_json_object(profile["one_to_many_mappings"]);
+  }
+
   // std::vector<f1,display_brightness_decrement>
   std::vector<std::pair<krbn::key_code, krbn::key_code>> get_current_profile_fn_function_keys(void) {
     auto profile = get_current_profile();
     return get_key_code_pair_from_json_object(profile["fn_function_keys"]);
+  }
+
+  // std::vector<from,to>
+  std::vector<std::pair<krbn::key_code, krbn::key_code>> get_current_profile_standalone_keys(void) {
+    auto profile = get_current_profile();
+    return get_key_code_pair_from_json_object(profile["standalone_keys"]);
   }
 
   krbn::virtual_hid_keyboard_configuration_struct get_current_profile_virtual_hid_keyboard(void) {
@@ -264,6 +276,40 @@ private:
         }
 
         v.push_back(std::make_pair(*from_key_code, *to_key_code));
+      }
+    }
+
+    return v;
+  }
+
+  std::vector<std::pair<krbn::key_code, std::vector<krbn::key_code>>> get_one_to_many_keycode_pair_from_json_object(const nlohmann::json& json) {
+    std::vector<std::pair<krbn::key_code, std::vector<krbn::key_code>>> v;
+
+    if (json.is_object()) {
+      for (auto it = json.begin(); it != json.end(); ++it) {
+        std::string from = it.key();
+        std::vector<std::string> to = it.value();
+
+        auto from_key_code = krbn::types::get_key_code(from);
+        if (!from_key_code) {
+          logger_.warn("unknown key_code:{0} in {1}", from, file_path_);
+          continue;
+        }
+
+        bool flag = true;
+        std::vector<krbn::key_code> to_key_codes;
+        for (auto it2 = to.begin(); it2 != to.end(); ++it2) {
+            auto to_key_code = krbn::types::get_key_code(*it2);
+            if (!to_key_code) {
+                logger_.warn("unknown key_code:{0} in {1}", *it2, file_path_);
+                flag = false;
+                break;
+            }
+            to_key_codes.push_back(*to_key_code);
+        }
+        if (flag) {
+            v.push_back(std::make_pair(*from_key_code, to_key_codes));
+        }
       }
     }
 
