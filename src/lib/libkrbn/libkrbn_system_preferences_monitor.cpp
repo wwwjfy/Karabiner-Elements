@@ -21,6 +21,7 @@ private:
       v.keyboard_fn_state = values.get_keyboard_fn_state();
       v.initial_key_repeat_milliseconds = values.get_initial_key_repeat_milliseconds();
       v.key_repeat_milliseconds = values.get_key_repeat_milliseconds();
+      v.standalone_key_milliseconds = values.get_standalone_key_milliseconds();
       callback_(&v, refcon_);
     }
   }

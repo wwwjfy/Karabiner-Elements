@@ -142,6 +142,12 @@ public:
     return v;
   }
 
+  // std::vector<from,to>
+  std::vector<std::pair<krbn::key_code, krbn::key_code>> get_current_profile_standalone_keys(void) {
+    auto profile = get_current_profile();
+    return get_key_code_pair_from_json_object(profile["standalone_keys"]);
+  }
+
   std::string get_current_profile_json(void) {
     return get_current_profile().dump();
   }
