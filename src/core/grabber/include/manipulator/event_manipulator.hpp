@@ -203,6 +203,10 @@ public:
       return;
     }
 
+    if (post_hyper_key(to_key_code, pressed)) {
+      return;
+    }
+
     if (post_modifier_flag_event(to_key_code, pressed)) {
       return;
     }
@@ -401,6 +405,17 @@ private:
     if (auto to_key_code = standalone_keys_.get(key_code)) {
       post_key(*to_key_code, true);
       post_key(*to_key_code, false);
+      return true;
+    }
+    return false;
+  }
+
+  bool post_hyper_key(krbn::key_code key_code, bool pressed) {
+    if (key_code == krbn::key_code::hyper) {
+      post_modifier_flag_event(krbn::key_code(kHIDUsage_KeyboardLeftControl), pressed);
+      post_modifier_flag_event(krbn::key_code(kHIDUsage_KeyboardLeftShift), pressed);
+      post_modifier_flag_event(krbn::key_code(kHIDUsage_KeyboardLeftAlt), pressed);
+      post_modifier_flag_event(krbn::key_code(kHIDUsage_KeyboardLeftGUI), pressed);
       return true;
     }
     return false;
