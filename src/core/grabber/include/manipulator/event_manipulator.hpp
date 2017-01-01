@@ -207,10 +207,6 @@ public:
       return;
     }
 
-    if (post_modifier_flag_event(to_key_code, pressed)) {
-      return;
-    }
-
     post_key(to_key_code, pressed);
   }
 
@@ -368,9 +364,7 @@ private:
     if (pressed) {
       if (!standalone_keys_.get(key_code) || (standalone_keys_timer_ != nullptr && key_code != standalone_key_)) {
         if (standalone_keys_timer_ != nullptr) {
-          if (!post_modifier_flag_event(standalone_key_, pressed)) {
-            post_key(standalone_key_, true);
-          }
+          post_key(standalone_key_, pressed);
           standalone_keys_timer_ = nullptr;
         }
         return false;
@@ -383,9 +377,7 @@ private:
             standalone_key_milliseconds * NSEC_PER_MSEC,
             0,
             ^{
-              if (!post_modifier_flag_event(standalone_key_, pressed)) {
-                post_key(standalone_key_, true);
-              }
+              post_key(standalone_key_, pressed);
               standalone_keys_timer_ = nullptr;
             });
         return true;
@@ -412,30 +404,24 @@ private:
 
   bool post_hyper_key(krbn::key_code key_code, bool pressed) {
     if (key_code == krbn::key_code::hyper) {
-      post_modifier_flag_event(krbn::key_code(kHIDUsage_KeyboardLeftControl), pressed);
-      post_modifier_flag_event(krbn::key_code(kHIDUsage_KeyboardLeftShift), pressed);
-      post_modifier_flag_event(krbn::key_code(kHIDUsage_KeyboardLeftAlt), pressed);
-      post_modifier_flag_event(krbn::key_code(kHIDUsage_KeyboardLeftGUI), pressed);
+      post_key(krbn::key_code(kHIDUsage_KeyboardLeftControl), pressed);
+      post_key(krbn::key_code(kHIDUsage_KeyboardLeftShift), pressed);
+      post_key(krbn::key_code(kHIDUsage_KeyboardLeftAlt), pressed);
+      post_key(krbn::key_code(kHIDUsage_KeyboardLeftGUI), pressed);
       return true;
     }
-    return false;
-  }
-
-  bool post_modifier_flag_event(krbn::key_code key_code, bool pressed) {
-    auto operation = pressed ? manipulator::modifier_flag_manager::operation::increase : manipulator::modifier_flag_manager::operation::decrease;
-
-    auto modifier_flag = krbn::types::get_modifier_flag(key_code);
-    if (modifier_flag != krbn::modifier_flag::zero) {
-      modifier_flag_manager_.manipulate(modifier_flag, operation);
-
-      post_key(key_code, pressed);
-      return true;
-    }
-
     return false;
   }
 
   void post_key(krbn::key_code key_code, bool pressed) {
+    // pre-process modifier keys
+    auto operation = pressed ? manipulator::modifier_flag_manager::operation::increase : manipulator::modifier_flag_manager::operation::decrease;
+    auto modifier_flag = krbn::types::get_modifier_flag(key_code);
+    if (modifier_flag != krbn::modifier_flag::zero) {
+      modifier_flag_manager_.manipulate(modifier_flag, operation);
+    }
+
+    // send key event
     if (auto usage_page = krbn::types::get_usage_page(key_code)) {
       if (auto usage = krbn::types::get_usage(key_code)) {
         pqrs::karabiner_virtual_hid_device::hid_event_service::keyboard_event keyboard_event;
