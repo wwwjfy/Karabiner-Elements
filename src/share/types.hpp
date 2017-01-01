@@ -115,6 +115,7 @@ enum class key_code : uint32_t {
 
   // Keys that are not in generic keyboard_or_keypad usage_page.
   fn,
+  hyper,
   display_brightness_decrement,
   display_brightness_increment,
   dashboard,
@@ -442,6 +443,7 @@ public:
         {"vk_none", key_code::vk_none},
 
         {"fn", key_code::fn},
+        {"hyper", key_code::hyper},
         {"display_brightness_decrement", key_code::display_brightness_decrement},
         {"display_brightness_increment", key_code::display_brightness_increment},
         {"mission_control", key_code::mission_control},
