@@ -154,6 +154,19 @@ private:
           }
           break;
 
+        case krbn::operation_type::clear_one_to_many_mappings:
+          event_manipulator_.clear_one_to_many_mappings();
+          break;
+
+        case krbn::operation_type::add_one_to_many_mappings:
+          if (n < sizeof(krbn::operation_type_add_one_to_many_mappings_struct)) {
+            logger::get_logger().error("invalid size for krbn::operation_type::add_one_to_many_mappings ({0})", n);
+          } else {
+            auto p = reinterpret_cast<krbn::operation_type_add_one_to_many_mappings_struct*>(&(buffer_[0]));
+            event_manipulator_.add_one_to_many_mappings(p->from_key_code, p->to_key_code);
+          }
+          break;
+
         case krbn::operation_type::complete_devices:
           device_grabber_.complete_device_configurations();
           break;

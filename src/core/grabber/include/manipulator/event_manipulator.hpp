@@ -99,6 +99,14 @@ public:
     standalone_keys_.add(from_key_code, to_key_code);
   }
 
+  void clear_one_to_many_mappings(void) {
+    one_to_many_mappings_.clear();
+  }
+
+  void add_one_to_many_mappings(krbn::key_code from_key_code, krbn::key_code to_key_code) {
+    one_to_many_mappings_.add(from_key_code, to_key_code);
+  }
+
   void initialize_virtual_hid_keyboard(krbn::keyboard_type keyboard_type) {
     virtual_hid_device_client_.initialize_virtual_hid_keyboard(keyboard_type);
   }
@@ -119,6 +127,9 @@ public:
   void handle_keyboard_event(device_registry_entry_id device_registry_entry_id,
                              krbn::key_code from_key_code,
                              bool pressed) {
+    if (process_one_to_many_mappings(from_key_code, pressed)) {
+        return;
+    }
     krbn::key_code to_key_code = from_key_code;
 
     // ----------------------------------------
@@ -199,11 +210,7 @@ public:
     }
 
     // ----------------------------------------
-    if (process_standalone_key(to_key_code, pressed)) {
-      return;
-    }
-
-    if (post_hyper_key(to_key_code, pressed)) {
+    if (process_standalone_key(from_key_code, to_key_code, pressed)) {
       return;
     }
 
@@ -360,16 +367,69 @@ private:
     std::mutex mutex_;
   };
 
-  bool process_standalone_key(krbn::key_code key_code, bool pressed) {
+  class one_to_many_mappings final {
+  public:
+    one_to_many_mappings(const one_to_many_mappings&) = delete;
+
+    one_to_many_mappings(void) {
+    }
+
+    void clear(void) {
+      std::lock_guard<std::mutex> guard(mutex_);
+
+      map_.clear();
+    }
+
+    void add(krbn::key_code from_key_code, krbn::key_code to_key_code) {
+      std::lock_guard<std::mutex> guard(mutex_);
+
+      auto it = map_.find(from_key_code);
+      if (it != map_.end()) {
+          it->second.push_back(to_key_code);
+      } else {
+          std::vector<krbn::key_code> to_key_codes;
+          to_key_codes.push_back(to_key_code);
+          map_[from_key_code] = to_key_codes;
+      }
+    }
+
+    boost::optional<std::vector<krbn::key_code>> get(krbn::key_code from_key_code) {
+      std::lock_guard<std::mutex> guard(mutex_);
+
+      auto it = map_.find(from_key_code);
+      if (it != map_.end()) {
+        return it->second;
+      }
+
+      return boost::none;
+    }
+
+  private:
+    std::unordered_map<krbn::key_code, std::vector<krbn::key_code>> map_;
+    std::mutex mutex_;
+  };
+
+  bool process_one_to_many_mappings(krbn::key_code key_code, bool pressed) {
+    if (auto to_key_codes = one_to_many_mappings_.get(key_code)) {
+      for (auto it = (*to_key_codes).begin(); it != (*to_key_codes).end(); it++) {
+        post_key(*it, pressed);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool process_standalone_key(krbn::key_code from_key_code, krbn::key_code to_key_code, bool pressed) {
     if (pressed) {
-      if (!standalone_keys_.get(key_code) || (standalone_keys_timer_ != nullptr && key_code != standalone_key_)) {
+      if (!standalone_keys_.get(from_key_code) || (standalone_keys_timer_ != nullptr && from_key_code != standalone_from_key_)) {
         if (standalone_keys_timer_ != nullptr) {
-          post_key(standalone_key_, pressed);
           standalone_keys_timer_ = nullptr;
+          post_key(standalone_to_key_, pressed);
         }
         return false;
       } else {
-        standalone_key_ = key_code;
+        standalone_from_key_ = from_key_code;
+        standalone_to_key_ = to_key_code;
         long standalone_key_milliseconds = system_preferences_values_.get_standalone_key_milliseconds();
         standalone_keys_timer_ = std::make_unique<gcd_utility::main_queue_timer>(
             DISPATCH_TIMER_STRICT,
@@ -377,15 +437,17 @@ private:
             standalone_key_milliseconds * NSEC_PER_MSEC,
             0,
             ^{
-              post_key(standalone_key_, pressed);
+              post_key(to_key_code, pressed);
               standalone_keys_timer_ = nullptr;
             });
         return true;
       }
     } else {
-      if (key_code == standalone_key_ && standalone_keys_timer_ != nullptr) {
+      if (from_key_code == standalone_from_key_ && standalone_keys_timer_ != nullptr) {
         standalone_keys_timer_ = nullptr;
-        post_standalone_key(standalone_key_);
+        auto to_standalone_key_code = standalone_keys_.get(from_key_code);
+        post_key(*to_standalone_key_code, true);
+        post_key(*to_standalone_key_code, false);
         return true;
       } else {
         return false;
@@ -397,17 +459,6 @@ private:
     if (auto to_key_code = standalone_keys_.get(key_code)) {
       post_key(*to_key_code, true);
       post_key(*to_key_code, false);
-      return true;
-    }
-    return false;
-  }
-
-  bool post_hyper_key(krbn::key_code key_code, bool pressed) {
-    if (key_code == krbn::key_code::hyper) {
-      post_key(krbn::key_code(kHIDUsage_KeyboardLeftControl), pressed);
-      post_key(krbn::key_code(kHIDUsage_KeyboardLeftShift), pressed);
-      post_key(krbn::key_code(kHIDUsage_KeyboardLeftAlt), pressed);
-      post_key(krbn::key_code(kHIDUsage_KeyboardLeftGUI), pressed);
       return true;
     }
     return false;
@@ -443,7 +494,9 @@ private:
   simple_modifications simple_modifications_;
   simple_modifications fn_function_keys_;
   simple_modifications standalone_keys_;
-  krbn::key_code standalone_key_;
+  one_to_many_mappings one_to_many_mappings_;
+  krbn::key_code standalone_from_key_;
+  krbn::key_code standalone_to_key_;
   std::unique_ptr<gcd_utility::main_queue_timer> standalone_keys_timer_;
 
   manipulated_keys manipulated_keys_;

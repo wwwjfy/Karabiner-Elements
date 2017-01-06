@@ -28,6 +28,8 @@ enum class operation_type : uint8_t {
   add_fn_function_key,
   clear_standalone_keys,
   add_standalone_key,
+  clear_one_to_many_mappings,
+  add_one_to_many_mappings,
   virtual_hid_keyboard_configuration_updated,
   clear_devices,
   add_device,
@@ -115,7 +117,6 @@ enum class key_code : uint32_t {
 
   // Keys that are not in generic keyboard_or_keypad usage_page.
   fn,
-  hyper,
   display_brightness_decrement,
   display_brightness_increment,
   dashboard,
@@ -443,7 +444,6 @@ public:
         {"vk_none", key_code::vk_none},
 
         {"fn", key_code::fn},
-        {"hyper", key_code::hyper},
         {"display_brightness_decrement", key_code::display_brightness_decrement},
         {"display_brightness_increment", key_code::display_brightness_increment},
         {"mission_control", key_code::mission_control},
@@ -693,6 +693,20 @@ struct operation_type_clear_standalone_keys_struct {
 
 struct operation_type_add_standalone_key_struct {
   operation_type_add_standalone_key_struct(void) : operation_type(operation_type::add_standalone_key) {}
+
+  const operation_type operation_type;
+  key_code from_key_code;
+  key_code to_key_code;
+};
+
+struct operation_type_clear_one_to_many_mappings_struct {
+  operation_type_clear_one_to_many_mappings_struct(void) : operation_type(operation_type::clear_one_to_many_mappings) {}
+
+  const operation_type operation_type;
+};
+
+struct operation_type_add_one_to_many_mappings_struct {
+  operation_type_add_one_to_many_mappings_struct(void) : operation_type(operation_type::add_one_to_many_mappings) {}
 
   const operation_type operation_type;
   key_code from_key_code;
