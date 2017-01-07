@@ -127,6 +127,15 @@ public:
   void handle_keyboard_event(device_registry_entry_id device_registry_entry_id,
                              krbn::key_code from_key_code,
                              bool pressed) {
+    if (process_standalone_key(device_registry_entry_id, from_key_code, pressed)) {
+      return;
+    }
+    _handle_keyboard_event(device_registry_entry_id, from_key_code, pressed);
+  }
+
+  void _handle_keyboard_event(device_registry_entry_id device_registry_entry_id,
+                              krbn::key_code from_key_code,
+                              bool pressed) {
     if (process_one_to_many_mappings(from_key_code, pressed)) {
         return;
     }
@@ -210,9 +219,6 @@ public:
     }
 
     // ----------------------------------------
-    if (process_standalone_key(from_key_code, to_key_code, pressed)) {
-      return;
-    }
 
     post_key(to_key_code, pressed);
   }
@@ -419,17 +425,18 @@ private:
     return false;
   }
 
-  bool process_standalone_key(krbn::key_code from_key_code, krbn::key_code to_key_code, bool pressed) {
+  bool process_standalone_key(device_registry_entry_id device_registry_entry_id,
+                              krbn::key_code from_key_code,
+                              bool pressed) {
     if (pressed) {
       if (!standalone_keys_.get(from_key_code) || (standalone_keys_timer_ != nullptr && from_key_code != standalone_from_key_)) {
         if (standalone_keys_timer_ != nullptr) {
           standalone_keys_timer_ = nullptr;
-          post_key(standalone_to_key_, pressed);
+          _handle_keyboard_event(device_registry_entry_id, standalone_from_key_, pressed);
         }
         return false;
       } else {
         standalone_from_key_ = from_key_code;
-        standalone_to_key_ = to_key_code;
         long standalone_key_milliseconds = system_preferences_values_.get_standalone_key_milliseconds();
         standalone_keys_timer_ = std::make_unique<gcd_utility::main_queue_timer>(
             DISPATCH_TIMER_STRICT,
@@ -437,7 +444,7 @@ private:
             standalone_key_milliseconds * NSEC_PER_MSEC,
             0,
             ^{
-              post_key(to_key_code, pressed);
+              _handle_keyboard_event(device_registry_entry_id, from_key_code, pressed);
               standalone_keys_timer_ = nullptr;
             });
         return true;
@@ -496,7 +503,6 @@ private:
   simple_modifications standalone_keys_;
   one_to_many_mappings one_to_many_mappings_;
   krbn::key_code standalone_from_key_;
-  krbn::key_code standalone_to_key_;
   std::unique_ptr<gcd_utility::main_queue_timer> standalone_keys_timer_;
 
   manipulated_keys manipulated_keys_;
