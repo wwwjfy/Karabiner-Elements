@@ -29,6 +29,7 @@
 @property(copy, readonly) NSArray<KarabinerKitDeviceConfiguration*>* devices;
 @property(copy) NSString* virtualHIDKeyboardType;
 @property NSUInteger virtualHIDKeyboardCapsLockDelayMilliseconds;
+@property NSUInteger virtualHIDKeyboardStandaloneKeysDelayMilliseconds;
 
 // For JSON serialization
 @property(copy, readonly) NSDictionary* simpleModificationsDictionary;

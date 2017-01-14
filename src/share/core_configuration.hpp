@@ -37,7 +37,8 @@
 //             },
 //             "virtual_hid_keyboard": {
 //                 "keyboard_type": "ansi",
-//                 "caps_lock_delay_milliseconds": 100
+//                 "caps_lock_delay_milliseconds": 100,
+//                 "standalone_keys_delay_milliseconds": 200
 //             },
 //             "devices": [
 //                 {
@@ -148,6 +149,10 @@ public:
 
       if (profile["virtual_hid_keyboard"]["caps_lock_delay_milliseconds"].is_number()) {
         virtual_hid_keyboard_configuration_struct.caps_lock_delay_milliseconds = profile["virtual_hid_keyboard"]["caps_lock_delay_milliseconds"];
+      }
+
+      if (profile["virtual_hid_keyboard"]["standalone_keys_delay_milliseconds"].is_number()) {
+        virtual_hid_keyboard_configuration_struct.standalone_keys_delay_milliseconds = profile["virtual_hid_keyboard"]["standalone_keys_delay_milliseconds"];
       }
     }
 

@@ -109,6 +109,7 @@ public:
   }
 
   void initialize_virtual_hid_keyboard(const krbn::virtual_hid_keyboard_configuration_struct& configuration) {
+    standalone_keys_delay_milliseconds_ = configuration.standalone_keys_delay_milliseconds;
     virtual_hid_device_client_.initialize_virtual_hid_keyboard(configuration);
   }
 
@@ -449,11 +450,10 @@ private:
         return false;
       } else {
         standalone_from_key_ = from_key_code;
-        long standalone_key_milliseconds = system_preferences_values_.get_standalone_key_milliseconds();
         standalone_keys_timer_ = std::make_unique<gcd_utility::main_queue_timer>(
             DISPATCH_TIMER_STRICT,
-            dispatch_time(DISPATCH_TIME_NOW, standalone_key_milliseconds * NSEC_PER_MSEC),
-            standalone_key_milliseconds * NSEC_PER_MSEC,
+            dispatch_time(DISPATCH_TIME_NOW, standalone_keys_delay_milliseconds_ * NSEC_PER_MSEC),
+            standalone_keys_delay_milliseconds_ * NSEC_PER_MSEC,
             0,
             ^{
               _handle_keyboard_event(device_registry_entry_id, timestamp, from_key_code, pressed);
@@ -551,5 +551,6 @@ private:
   manipulated_keys manipulated_fn_keys_;
 
   uint64_t last_timestamp_;
+  uint32_t standalone_keys_delay_milliseconds_;
 };
 }
