@@ -10,7 +10,6 @@ class system_preferences final {
 public:
   class values {
   public:
-<<<<<<< HEAD
     values(void) : keyboard_fn_state_(system_preferences::get_keyboard_fn_state()),
                    standalone_key_milliseconds_(system_preferences::get_standalone_key_milliseconds()) {
     }
