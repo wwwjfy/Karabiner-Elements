@@ -22,6 +22,7 @@
 @property(copy, readonly) NSArray* devicesArray;
 @property(copy) NSString* virtualHIDKeyboardType;
 @property NSUInteger virtualHIDKeyboardCapsLockDelayMilliseconds;
+@property NSUInteger virtualHIDKeyboardStandaloneKeysDelayMilliseconds;
 
 - (instancetype)initWithProfile:(NSDictionary*)profile;
 

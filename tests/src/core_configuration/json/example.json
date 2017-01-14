@@ -23,7 +23,8 @@
             },
             "virtual_hid_keyboard": {
                 "keyboard_type": "iso",
-                "caps_lock_delay_milliseconds": 100
+                "caps_lock_delay_milliseconds": 100,
+                "standalone_keys_delay_milliseconds": 200
             },
             "devices": [
                 {

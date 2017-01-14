@@ -24,6 +24,8 @@
 @property(weak) IBOutlet NSPopUpButton* virtualHIDKeyboardTypePopupButton;
 @property(weak) IBOutlet NSTextField* virtualHIDKeyboardCapsLockDelayMillisecondsText;
 @property(weak) IBOutlet NSStepper* virtualHIDKeyboardCapsLockDelayMillisecondsStepper;
+@property(weak) IBOutlet NSTextField* virtualHIDKeyboardStandaloneKeysDelayMillisecondsText;
+@property(weak) IBOutlet NSStepper* virtualHIDKeyboardStandaloneKeysDelayMillisecondsStepper;
 @property(weak) IBOutlet SimpleModificationsMenuManager* simpleModificationsMenuManager;
 @property(weak) IBOutlet SimpleModificationsTableViewController* simpleModificationsTableViewController;
 @property(weak) IBOutlet SystemPreferencesManager* systemPreferencesManager;
@@ -42,6 +44,7 @@
   [self.devicesTableViewController setup];
   [self setupVirtualHIDKeyboardTypePopUpButton];
   [self setupVirtualHIDKeyboardCapsLockDelayMilliseconds:nil];
+  [self setupVirtualHIDKeyboardStandaloneKeysDelayMilliseconds:nil];
   [self.logFileTextViewController monitor];
 
   @weakify(self);
@@ -54,6 +57,7 @@
 
                                                   [self setupVirtualHIDKeyboardTypePopUpButton];
                                                   [self setupVirtualHIDKeyboardCapsLockDelayMilliseconds:nil];
+                                                  [self setupVirtualHIDKeyboardStandaloneKeysDelayMilliseconds:nil];
                                                 }];
   [[NSNotificationCenter defaultCenter] addObserverForName:kSystemPreferencesValuesAreUpdated
                                                     object:nil
@@ -146,6 +150,18 @@
   }
 }
 
+- (void)setupVirtualHIDKeyboardStandaloneKeysDelayMilliseconds:(id)sender {
+    KarabinerKitCoreConfigurationModel* coreConfigurationModel = [KarabinerKitConfigurationManager sharedManager].coreConfigurationModel;
+    if (coreConfigurationModel) {
+        if (sender != self.virtualHIDKeyboardStandaloneKeysDelayMillisecondsText) {
+            self.virtualHIDKeyboardStandaloneKeysDelayMillisecondsText.stringValue = @(coreConfigurationModel.virtualHIDKeyboardStandaloneKeysDelayMilliseconds).stringValue;
+        }
+        if (sender != self.virtualHIDKeyboardStandaloneKeysDelayMillisecondsStepper) {
+            self.virtualHIDKeyboardStandaloneKeysDelayMillisecondsStepper.integerValue = coreConfigurationModel.virtualHIDKeyboardStandaloneKeysDelayMilliseconds;
+        }
+    }
+}
+
 - (IBAction)changeVirtualHIDKeyboardTYpe:(id)sender {
   NSMenuItem* selectedItem = self.virtualHIDKeyboardTypePopupButton.selectedItem;
   if (selectedItem) {
@@ -176,6 +192,24 @@
   }
 
   [self setupVirtualHIDKeyboardCapsLockDelayMilliseconds:sender];
+}
+
+- (IBAction)changeVirtualHIDKeyboardStandaloneKeysDelayMilliseconds:(NSControl*)sender {
+    // If sender.stringValue is empty, set "0"
+    if (sender.integerValue == 0) {
+        sender.integerValue = 0;
+    }
+
+    KarabinerKitConfigurationManager* configurationManager = [KarabinerKitConfigurationManager sharedManager];
+    if (configurationManager) {
+        KarabinerKitCoreConfigurationModel* coreConfigurationModel = configurationManager.coreConfigurationModel;
+        if (coreConfigurationModel) {
+            coreConfigurationModel.virtualHIDKeyboardStandaloneKeysDelayMilliseconds = sender.integerValue;
+            [configurationManager save];
+        }
+    }
+
+    [self setupVirtualHIDKeyboardStandaloneKeysDelayMilliseconds:sender];
 }
 
 - (void)updateSystemPreferencesUIValues {

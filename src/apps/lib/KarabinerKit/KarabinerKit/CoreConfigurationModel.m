@@ -37,6 +37,11 @@
       _virtualHIDKeyboardCapsLockDelayMilliseconds = [profile[@"virtual_hid_keyboard"][@"caps_lock_delay_milliseconds"] unsignedIntegerValue];
     }
 
+    _virtualHIDKeyboardStandaloneKeysDelayMilliseconds = 0;
+    if ([profile[@"virtual_hid_keyboard"] isKindOfClass:[NSDictionary class]]) {
+      _virtualHIDKeyboardStandaloneKeysDelayMilliseconds = [profile[@"virtual_hid_keyboard"][@"standalone_keys_delay_milliseconds"] unsignedIntegerValue];
+    }
+
     // _devices
     NSMutableArray<KarabinerKitDeviceConfiguration*>* devices = [NSMutableArray new];
     if (profile[@"devices"]) {
@@ -178,6 +183,7 @@
   return @{
     @"keyboard_type" : self.virtualHIDKeyboardType,
     @"caps_lock_delay_milliseconds" : @(self.virtualHIDKeyboardCapsLockDelayMilliseconds),
+    @"standalone_keys_delay_milliseconds" : @(self.virtualHIDKeyboardStandaloneKeysDelayMilliseconds),
   };
 }
 
