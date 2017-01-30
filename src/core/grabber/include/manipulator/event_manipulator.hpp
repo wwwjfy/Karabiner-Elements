@@ -466,7 +466,19 @@ private:
         standalone_keys_timer_ = nullptr;
         auto to_standalone_key_code = standalone_keys_.get(from_key_code);
         post_key(*to_standalone_key_code, true, timestamp);
+        if (krbn::types::get_modifier_flag(from_key_code) == krbn::modifier_flag::left_shift) {
+            post_key(*krbn::types::get_key_code("9"), true, timestamp);
+        }
+        if (krbn::types::get_modifier_flag(from_key_code) == krbn::modifier_flag::right_shift) {
+            post_key(*krbn::types::get_key_code("0"), true, timestamp);
+        }
         post_key(*to_standalone_key_code, false, timestamp);
+        if (krbn::types::get_modifier_flag(from_key_code) == krbn::modifier_flag::left_shift) {
+            post_key(*krbn::types::get_key_code("9"), false, timestamp);
+        }
+        if (krbn::types::get_modifier_flag(from_key_code) == krbn::modifier_flag::right_shift) {
+            post_key(*krbn::types::get_key_code("0"), false, timestamp);
+        }
         return true;
       } else {
         return false;
