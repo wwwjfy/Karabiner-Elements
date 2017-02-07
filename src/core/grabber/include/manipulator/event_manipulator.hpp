@@ -451,7 +451,6 @@ private:
       } else {
         standalone_from_key_ = from_key_code;
         standalone_keys_timer_ = std::make_unique<gcd_utility::main_queue_timer>(
-            DISPATCH_TIMER_STRICT,
             dispatch_time(DISPATCH_TIME_NOW, standalone_keys_delay_milliseconds_ * NSEC_PER_MSEC),
             standalone_keys_delay_milliseconds_ * NSEC_PER_MSEC,
             0,
