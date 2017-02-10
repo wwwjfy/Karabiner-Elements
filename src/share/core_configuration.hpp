@@ -143,9 +143,11 @@ public:
 
     auto profile = get_current_profile();
     if (profile["virtual_hid_keyboard"].is_object()) {
-      std::string keyboard_type_name = profile["virtual_hid_keyboard"]["keyboard_type"];
-      if (auto keyboard_type = krbn::types::get_keyboard_type(keyboard_type_name)) {
-        virtual_hid_keyboard_configuration_struct.keyboard_type = *keyboard_type;
+      if (profile["virtual_hid_keyboard"]["keyboard_type"].is_string()) {
+          std::string keyboard_type_name = profile["virtual_hid_keyboard"]["keyboard_type"];
+          if (auto keyboard_type = krbn::types::get_keyboard_type(keyboard_type_name)) {
+            virtual_hid_keyboard_configuration_struct.keyboard_type = *keyboard_type;
+          }
       }
 
       if (profile["virtual_hid_keyboard"]["caps_lock_delay_milliseconds"].is_number()) {
@@ -255,6 +257,8 @@ public:
     json["fn_function_keys"]["f11"] = "volume_decrement";
     json["fn_function_keys"]["f12"] = "volume_increment";
     json["devices"] = nlohmann::json::array();
+    json["virtual_hid_keyboard"]["keyboard_type"] = "ansi";
+    json["virtual_hid_keyboard"]["standalone_keys_delay_milliseconds"] = 200;
     return json;
   }
 
