@@ -442,23 +442,24 @@ private:
                               krbn::key_code from_key_code,
                               bool pressed) {
     if (pressed) {
-      if (!standalone_keys_.get(from_key_code) || (standalone_keys_timer_ != nullptr && from_key_code != standalone_from_key_)) {
-        if (standalone_keys_timer_ != nullptr) {
-          standalone_keys_timer_ = nullptr;
-          _handle_keyboard_event(device_registry_entry_id, timestamp, standalone_from_key_, pressed);
-        }
-        return false;
-      } else {
+      if (standalone_keys_timer_ != nullptr) { // press the previous standalone key as the normal key
+        standalone_keys_timer_ = nullptr;
+        _handle_keyboard_event(device_registry_entry_id, timestamp, standalone_from_key_, pressed);
+        handle_keyboard_event(device_registry_entry_id, timestamp, from_key_code, pressed);
+        return true;
+      } else if (standalone_keys_.get(from_key_code)) { // from_key_code in standalone keys
         standalone_from_key_ = from_key_code;
         standalone_keys_timer_ = std::make_unique<gcd_utility::main_queue_timer>(
             dispatch_time(DISPATCH_TIME_NOW, standalone_keys_delay_milliseconds_ * NSEC_PER_MSEC),
             standalone_keys_delay_milliseconds_ * NSEC_PER_MSEC,
             0,
             ^{
-              _handle_keyboard_event(device_registry_entry_id, timestamp, from_key_code, pressed);
               standalone_keys_timer_ = nullptr;
+              _handle_keyboard_event(device_registry_entry_id, timestamp, from_key_code, pressed);
             });
         return true;
+      } else {
+        return false;
       }
     } else {
       if (from_key_code == standalone_from_key_ && standalone_keys_timer_ != nullptr) {
