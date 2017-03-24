@@ -333,16 +333,7 @@ private:
     auto it = one_to_many_mappings_key_code_map_.find(key_code);
     if (it != one_to_many_mappings_key_code_map_.end()) {
       auto to_key_codes = it->second;
-      for (auto it2 = to_key_codes.begin(); it2 != to_key_codes.end(); it2++) {
-        if ((krbn::types::get_modifier_flag(*it2) != krbn::modifier_flag::zero) == pressed) {
-          post_key(*it2, pressed, timestamp);
-        }
-      }
-      for (auto it2 = to_key_codes.begin(); it2 != to_key_codes.end(); it2++) {
-        if ((krbn::types::get_modifier_flag(*it2) != krbn::modifier_flag::zero) != pressed) {
-          post_key(*it2, pressed, timestamp);
-        }
-      }
+      post_keys_sequence(to_key_codes, pressed, timestamp);
       return true;
     }
     return false;
@@ -376,8 +367,8 @@ private:
       if (from_key_code == standalone_from_key_ && standalone_keys_timer_ != nullptr) {
         standalone_keys_timer_ = nullptr;
         auto to_standalone_key_code = standalone_keys_key_code_map_.find(from_key_code)->second;
-        post_key(to_standalone_key_code, true, timestamp);
-        post_key(to_standalone_key_code, false, timestamp);
+        post_keys_sequence(to_standalone_key_code, true, timestamp);
+        post_keys_sequence(to_standalone_key_code, false, timestamp);
         return true;
       } else {
         return false;
@@ -385,14 +376,27 @@ private:
     }
   }
 
-  bool post_standalone_key(krbn::key_code key_code, uint64_t timestamp) {
-    auto it = standalone_keys_key_code_map_.find(key_code);
-    if (it != standalone_keys_key_code_map_.end()) {
-      post_key(it->second, true, timestamp);
-      post_key(it->second, false, timestamp);
-      return true;
-    }
-    return false;
+//  bool post_standalone_key(krbn::key_code key_code, uint64_t timestamp) {
+//    auto it = standalone_keys_key_code_map_.find(key_code);
+//    if (it != standalone_keys_key_code_map_.end()) {
+//      post_key(it->second, true, timestamp);
+//      post_key(it->second, false, timestamp);
+//      return true;
+//    }
+//    return false;
+//  }
+
+  void post_keys_sequence(std::vector<key_code> key_codes, bool pressed, uint64_t timestamp) {
+      for (auto it2 = key_codes.begin(); it2 != key_codes.end(); it2++) {
+          if ((krbn::types::get_modifier_flag(*it2) != krbn::modifier_flag::zero) == pressed) {
+              post_key(*it2, pressed, timestamp);
+          }
+      }
+      for (auto it2 = key_codes.begin(); it2 != key_codes.end(); it2++) {
+          if ((krbn::types::get_modifier_flag(*it2) != krbn::modifier_flag::zero) != pressed) {
+              post_key(*it2, pressed, timestamp);
+          }
+      }
   }
 
   void post_key(key_code key_code, bool pressed, uint64_t timestamp) {
@@ -454,7 +458,7 @@ private:
 
   std::unordered_map<key_code, key_code> simple_modifications_key_code_map_;
   std::unordered_map<key_code, key_code> fn_function_keys_key_code_map_;
-  std::unordered_map<key_code, key_code> standalone_keys_key_code_map_;
+  std::unordered_map<key_code, std::vector<key_code>> standalone_keys_key_code_map_;
   std::unordered_map<key_code, std::vector<key_code>> one_to_many_mappings_key_code_map_;
   key_code standalone_from_key_;
   std::unique_ptr<gcd_utility::main_queue_timer> standalone_keys_timer_;

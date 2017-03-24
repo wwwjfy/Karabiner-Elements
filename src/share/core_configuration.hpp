@@ -581,9 +581,9 @@ public:
       {
         const std::string key = "standalone_keys";
         if (json.find(key) != json.end()) {
-          standalone_keys_ = std::make_unique<simple_modifications>(json[key]);
+          standalone_keys_ = std::make_unique<one_to_many_mappings>(json[key]);
         } else {
-          standalone_keys_ = std::make_unique<simple_modifications>(nullptr);
+          standalone_keys_ = std::make_unique<one_to_many_mappings>(nullptr);
         }
       }
       {
@@ -665,7 +665,7 @@ public:
       return fn_function_keys_->to_key_code_map(logger);
     }
 
-    const std::unordered_map<key_code, key_code> get_standalone_keys_key_code_map(spdlog::logger& logger) const {
+    const std::unordered_map<key_code, std::vector<key_code>> get_standalone_keys_key_code_map(spdlog::logger& logger) const {
       return standalone_keys_->to_key_code_map(logger);
     }
     const std::unordered_map<key_code, std::vector<key_code>> get_one_to_many_mappings_key_code_map_(spdlog::logger& logger) const {
@@ -735,7 +735,7 @@ public:
     bool selected_;
     std::unique_ptr<simple_modifications> simple_modifications_;
     std::unique_ptr<simple_modifications> fn_function_keys_;
-    std::unique_ptr<simple_modifications> standalone_keys_;
+    std::unique_ptr<one_to_many_mappings> standalone_keys_;
     std::unique_ptr<one_to_many_mappings> one_to_many_mappings_;
     std::unique_ptr<virtual_hid_keyboard> virtual_hid_keyboard_;
     std::vector<device> devices_;
