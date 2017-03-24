@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CODESIGN_IDENTITY='184CFD8DD811220EF4280867071B1218F97931E6'
+CODESIGN_IDENTITY='84F6733015E5B993E983C1919E50244AE945CC34'
 
 # ------------------------------------------------------------
 PATH=/bin:/sbin:/usr/bin:/usr/sbin; export PATH
